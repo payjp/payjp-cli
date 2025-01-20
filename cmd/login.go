@@ -6,34 +6,66 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/payjp/payjp-cli/internal/login"
+	"github.com/payjp/payjp-cli/internal/payjp"
+	"github.com/payjp/payjp-cli/internal/profiles"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Authenticate and configure the PAY.JP CLI profile",
+	Long:  "Use this command to authenticate and configure your PAY.JP CLI profile.  This command will guide you through the authentication process and set up your profile with the necessary credentials to interact with the PAY.JP API.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("login called")
+		dashboardClient, err := payjp.NewClient(viper.GetString("BASE_URL"), "")
+		if err != nil {
+			return err
+		}
+
+		authResponse, err := login.CallAuth(ctx, dashboardClient)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Your pairing code is: %s\n", authResponse.VerificationCode)
+		fmt.Printf("To authenticate with PAY.JP, please access to: %s\n", authResponse.BrowserURL)
+		fmt.Println("Waiting for confirmation...")
+
+		pollingCh := make(chan *login.AuthResult)
+		go login.PollingAuthResult(ctx, dashboardClient, authResponse.PollURL, pollingCh)
+		authResult := <-pollingCh
+		if authResult.Err != nil {
+			return authResult.Err
+		}
+
+		profileName := cmd.Flag("profile").Value.String()
+		fmt.Printf(
+			"Successfully authenticated! The PAY.JP CLI %s profile is configured for %s with account id %s\n",
+			profileName,
+			authResult.AccountDisplayName,
+			authResult.AccountID,
+		)
+
+		loggedInProfile := profiles.Profile{
+			Name:              profileName,
+			TestModeSecretKey: authResult.TestModeSecretKey,
+		}
+
+		allProfiles := viper.Get("profiles").(*profiles.Profiles)
+		allProfiles.AddProfile(loggedInProfile)
+		err = allProfiles.Persist()
+		if err != nil {
+			return err
+		}
+
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(loginCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// loginCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// loginCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
