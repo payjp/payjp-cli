@@ -12,8 +12,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var profileFilePath string
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:          "payjp-cli",
@@ -34,14 +32,14 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVarP(&profileFilePath, "profile-file-path", "f", "", "profile file path (default is $HOME/.payjp-cli)")
+	rootCmd.PersistentFlags().String("profile-file-path", "", "file path (default is $HOME/.payjp-cli)")
 	rootCmd.PersistentFlags().StringP("profile", "p", "default", "profile name")
-
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	profileFilePath := rootCmd.Flag("profile-file-path").Value.String()
+
 	if profileFilePath != "" {
 		profiles, err := profiles.LoadFromFile(profileFilePath)
 		if err != nil {

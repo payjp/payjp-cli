@@ -37,12 +37,12 @@ func CallAuth(ctx context.Context, client *payjp.Client) (*PayjpCliAuthResponse,
 	if err != nil {
 		return nil, err
 	}
+
+	defer res.Body.Close()
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		res.Body.Close()
 		return nil, err
 	}
-	res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected http status code: %d %s", res.StatusCode, string(bodyBytes))
@@ -71,15 +71,14 @@ func PollingAuthResult(ctx context.Context, client *payjp.Client, pollURL string
 			return
 		}
 
+		defer res.Body.Close()
 		bodyBytes, err := io.ReadAll(res.Body)
 		if err != nil {
-			res.Body.Close()
 			pollingCh <- &AuthResult{
 				Err: err,
 			}
 			return
 		}
-		res.Body.Close()
 
 		if res.StatusCode != http.StatusOK {
 			pollingCh <- &AuthResult{
