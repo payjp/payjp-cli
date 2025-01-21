@@ -64,7 +64,7 @@ func (c *Client) PerformRequest(ctx context.Context, method, path string, params
 	req.Header.Set("X-Client-User-Agent", "TODO")
 
 	if c.apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+c.apiKey)
+		req.SetBasicAuth(c.apiKey, "")
 	}
 
 	if ctx != nil {

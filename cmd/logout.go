@@ -25,7 +25,7 @@ var logoutCmd = &cobra.Command{
 
 		allProfiles := viper.Get("profiles").(*profiles.Profiles)
 		if all {
-			allProfiles.Profiles = make(map[string]profiles.Profile)
+			allProfiles.Profiles = make(map[string]*profiles.Profile)
 			err = allProfiles.Persist()
 			if err != nil {
 				fmt.Println("Error saving profile: ", err)

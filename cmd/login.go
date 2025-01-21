@@ -50,7 +50,7 @@ var loginCmd = &cobra.Command{
 			authResult.AccountID,
 		)
 
-		loggedInProfile := profiles.Profile{
+		loggedInProfile := &profiles.Profile{
 			Name:              profileName,
 			TestModeSecretKey: authResult.TestModeSecretKey,
 		}
