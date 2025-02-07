@@ -70,4 +70,20 @@ func initConfig() {
 	viper.SetDefault("GRPC_SERVER_ADDRESS", "https://grpc.pay.jp/cli")
 
 	viper.AutomaticEnv() // read in environment variables that match
+
+	profiles := viper.Get("profiles").(*profiles.Profiles)
+	profileName := rootCmd.Flag("profile").Value.String()
+
+	profile := profiles.LoadProfile(profileName)
+	if profile != nil {
+		if profile.BaseURL != "" {
+			viper.Set("BASE_URL", profile.BaseURL)
+		}
+		if profile.BaseApiURL != "" {
+			viper.Set("BASE_API_URL", profile.BaseApiURL)
+		}
+		if profile.GrpcServerAddress != "" {
+			viper.Set("GRPC_SERVER_ADDRESS", profile.GrpcServerAddress)
+		}
+	}
 }

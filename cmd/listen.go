@@ -23,7 +23,7 @@ var listenCmd = &cobra.Command{
 
 		profileName := cmd.Flag("profile").Value.String()
 		allProfiles := viper.Get("profiles").(*profiles.Profiles)
-		profile := allProfiles.GetProfile(profileName)
+		profile := allProfiles.LoadProfile(profileName)
 		if profile == nil {
 			return fmt.Errorf("profile %s not found. you can create a profile using login command first.", profileName)
 		}

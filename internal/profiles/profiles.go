@@ -20,7 +20,7 @@ func (p *Profiles) RemoveProfile(name string) {
 	delete(p.Profiles, name)
 }
 
-func (p *Profiles) GetProfile(name string) *Profile {
+func (p *Profiles) LoadProfile(name string) *Profile {
 	if val, ok := p.Profiles[name]; ok {
 		return val
 	}
@@ -49,6 +49,9 @@ func LoadFromFile(path string) (*Profiles, error) {
 		profile := &Profile{
 			Name:              p["name"].(string),
 			TestModeSecretKey: p["test_mode_secret_key"].(string),
+			BaseURL:           p["base_url"].(string),
+			BaseApiURL:        p["base_api_url"].(string),
+			GrpcServerAddress: p["grpc_server_address"].(string),
 		}
 
 		profiles[k] = profile

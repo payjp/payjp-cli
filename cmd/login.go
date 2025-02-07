@@ -53,6 +53,9 @@ var loginCmd = &cobra.Command{
 		loggedInProfile := &profiles.Profile{
 			Name:              profileName,
 			TestModeSecretKey: authResult.TestModeSecretKey,
+			BaseURL:           viper.GetString("BASE_URL"),
+			BaseApiURL:        viper.GetString("BASE_API_URL"),
+			GrpcServerAddress: viper.GetString("GRPC_SERVER_ADDRESS"),
 		}
 
 		allProfiles := viper.Get("profiles").(*profiles.Profiles)
