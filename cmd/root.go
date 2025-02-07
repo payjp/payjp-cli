@@ -67,6 +67,7 @@ func initConfig() {
 
 	viper.SetDefault("BASE_URL", "https://pay.jp")
 	viper.SetDefault("BASE_API_URL", "https://api.pay.jp")
+	viper.SetDefault("GRPC_SERVER_ADDRESS", "https://grpc.pay.jp/cli")
 
 	viper.AutomaticEnv() // read in environment variables that match
 }

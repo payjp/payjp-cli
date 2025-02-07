@@ -6,8 +6,8 @@ package cmd
 import (
 	"fmt"
 
+	pb "github.com/payjp/payjp-cli/gen/proto"
 	"github.com/payjp/payjp-cli/internal/listen"
-	"github.com/payjp/payjp-cli/internal/payjp"
 	"github.com/payjp/payjp-cli/internal/profiles"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -16,13 +16,8 @@ import (
 // listenCmd represents the listen command
 var listenCmd = &cobra.Command{
 	Use:   "listen",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Listen to events",
+	Long:  `Listen to events from the PAY.JP. You can specify the events you want to listen to using the --events flag. By default, it listens to all events.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("listen called")
 
@@ -34,21 +29,20 @@ to quickly create a Cobra application.`,
 		}
 
 		ctx := cmd.Context()
-		apiClient, err := payjp.NewClient(viper.GetString("BASE_API_URL"), profile.TestModeSecretKey)
+		address := viper.GetString("GRPC_SERVER_ADDRESS")
+
+		err := listen.StartStream(ctx, address, &pb.ListenRequest{
+			ApiKey: profile.TestModeSecretKey,
+			Events: cmd.Flag("events").Value.String(),
+		}, func(res *pb.ListenResponse) error {
+			fmt.Printf("headers: %s \n", res.Headers)
+			fmt.Printf("event received id: %s type: %s \n", res.PayjpEvent.Id, res.PayjpEvent.Type)
+			// TODO: forwards the event to the local server
+			return nil
+		})
 		if err != nil {
 			return err
 		}
-
-		session, err := listen.CreateCliSession(ctx, apiClient)
-		if err != nil {
-			return err
-		}
-
-		fmt.Println("Session: ", session)
-
-		// TODO: grpc 接続
-
-		fmt.Println("Listening finished")
 
 		return nil
 	},
@@ -62,6 +56,7 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// listenCmd.PersistentFlags().String("foo", "", "A help for foo")
+	listenCmd.Flags().StringP("events", "e", "*", "events to listen to")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

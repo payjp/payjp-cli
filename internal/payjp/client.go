@@ -2,7 +2,6 @@ package payjp
 
 import (
 	"context"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -39,7 +38,7 @@ func (c *Client) client() *http.Client {
 	return c.httpClient
 }
 
-func (c *Client) PerformRequest(ctx context.Context, method, path string, params string) (*http.Response, error) {
+func (c *Client) PerformRequest(ctx context.Context, method, path string, params url.Values) (*http.Response, error) {
 	url, err := url.Parse(path)
 	if err != nil {
 		return nil, err
@@ -47,14 +46,15 @@ func (c *Client) PerformRequest(ctx context.Context, method, path string, params
 
 	url = c.baseURL.ResolveReference(url)
 
-	var body io.Reader
-	if method == http.MethodPost {
-		body = strings.NewReader(params)
-	} else {
-		url.RawQuery = params
+	if method == http.MethodGet {
+		query := url.Query()
+		for k, v := range params {
+			query.Set(k, v[0])
+		}
+		url.RawQuery = query.Encode()
 	}
 
-	req, err := http.NewRequest(method, url.String(), body)
+	req, err := http.NewRequest(method, url.String(), strings.NewReader(params.Encode()))
 	if err != nil {
 		return nil, err
 	}

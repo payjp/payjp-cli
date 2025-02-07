@@ -6,18 +6,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/payjp/payjp-cli/internal/payjp"
 )
 
 type PayjpCliAuthResponse struct {
-	BrowserURL       string `json:"browser_url"`
-	PollURL          string `json:"poll_url"`
-	VerificationCode string `json:"verification_code"`
+	BrowserURL  string `json:"browser_url"`
+	PollURL     string `json:"poll_url"`
+	PairingCode string `json:"pairing_code"`
 }
 
 type PayjpCliAuthPollingResponse struct {
+	Token              string `json:"token"`
+	PairingCode        string `json:"pariing_code"`
 	Redeemed           bool   `json:"redeemed"`
 	AccountID          string `json:"account_id"`
 	AccountDisplayName string `json:"account_display_name"`
@@ -33,7 +36,7 @@ type AuthResult struct {
 
 // CallAuth calls the /payjpcli/auth endpoint to start the authentication process
 func CallAuth(ctx context.Context, client *payjp.Client) (*PayjpCliAuthResponse, error) {
-	res, err := client.PerformRequest(ctx, "POST", "/payjpcli/auth", "")
+	res, err := client.PerformRequest(ctx, "POST", "/payjpcli/auth", url.Values{})
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +66,7 @@ func PollingAuthResult(ctx context.Context, client *payjp.Client, pollURL string
 	count := 0
 
 	for {
-		res, err := client.PerformRequest(ctx, "GET", pollURL, "")
+		res, err := client.PerformRequest(ctx, "GET", pollURL, url.Values{})
 		if err != nil {
 			pollingCh <- &AuthResult{
 				Err: err,

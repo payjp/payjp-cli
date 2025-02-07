@@ -2,49 +2,54 @@ package listen
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
-	"net/http"
+	"log"
 
-	"github.com/payjp/payjp-cli/internal/payjp"
+	pb "github.com/payjp/payjp-cli/gen/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-type PayjpCliSessionStatus string
-
-const (
-	PayjpCliSessionStatusUnused    PayjpCliSessionStatus = "unused"
-	PayjpCliSessionStatusActivated PayjpCliSessionStatus = "activated"
-	PayjpCliSessionStatusDisposed  PayjpCliSessionStatus = "disposed"
-)
-
-type PayjpCliSession struct {
-	ID      string
-	Status  PayjpCliSessionStatus
-	Expires int64
-}
-
-func CreateCliSession(ctx context.Context, client *payjp.Client) (*PayjpCliSession, error) {
-	res, err := client.PerformRequest(ctx, "POST", "/v1/payjpcli/sessions", "")
+func StartStream(ctx context.Context, address string, request *pb.ListenRequest, onEventHandler func(*pb.ListenResponse) error) error {
+	conn, err := grpc.NewClient(
+		address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	defer conn.Close()
 
-	defer res.Body.Close()
-	bodyBytes, err := io.ReadAll(res.Body)
+	grpcClient := pb.NewListenClient(conn)
+
+	stream, err := grpcClient.Listen(ctx)
 	if err != nil {
-		return nil, err
+		log.Fatal("Failed to listen.")
+		return err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected http status code: %d %s", res.StatusCode, string(bodyBytes))
+	err = stream.Send(request)
+	if err != nil {
+		log.Fatal("Failed to send request.")
+		return err
 	}
 
-	var session *PayjpCliSession
-	jsonErr := json.Unmarshal(bodyBytes, &session)
-	if jsonErr != nil {
-		return nil, jsonErr
-	}
+	for {
+		received, err := stream.Recv()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				log.Println("server closed the stream")
+				return err
+			}
 
-	return session, nil
+			log.Fatalf("Failed to receive event. %s", err)
+			return err
+		}
+
+		err = onEventHandler(received)
+		if err != nil {
+			return err
+		}
+	}
 }

@@ -31,7 +31,7 @@ var loginCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Printf("Your pairing code is: %s\n", authResponse.VerificationCode)
+		fmt.Printf("Your pairing code is: %s\n", authResponse.PairingCode)
 		fmt.Printf("To authenticate with PAY.JP, please access to: %s\n", authResponse.BrowserURL)
 		fmt.Println("Waiting for confirmation...")
 
