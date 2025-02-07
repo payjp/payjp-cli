@@ -29,15 +29,29 @@ var listenCmd = &cobra.Command{
 		}
 
 		ctx := cmd.Context()
+
+		skipVerify, err := cmd.Flags().GetBool("skip-verify")
+		if err != nil {
+			return err
+		}
+
+		eventForwarder, err := listen.NewEventForwarder(cmd.Flag("forward-to").Value.String(), skipVerify)
+		if err != nil {
+			return err
+		}
 		address := viper.GetString("GRPC_SERVER_ADDRESS")
 
-		err := listen.StartStream(ctx, address, &pb.ListenRequest{
+		err = listen.StartStream(ctx, address, &pb.ListenRequest{
 			ApiKey: profile.TestModeSecretKey,
 			Events: cmd.Flag("events").Value.String(),
 		}, func(res *pb.ListenResponse) error {
-			fmt.Printf("headers: %s \n", res.Headers)
 			fmt.Printf("event received id: %s type: %s \n", res.PayjpEvent.Id, res.PayjpEvent.Type)
-			// TODO: forwards the event to the local server
+
+			err := eventForwarder.ForwardEvent(res)
+			if err != nil {
+				return err
+			}
+
 			return nil
 		})
 		if err != nil {
@@ -51,14 +65,7 @@ var listenCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(listenCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// listenCmd.PersistentFlags().String("foo", "", "A help for foo")
-	listenCmd.Flags().StringP("events", "e", "*", "events to listen to")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// listenCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	listenCmd.Flags().StringP("events", "e", "*", "comma separated list of events to listen to, e.g. charge.created,charge.updated")
+	listenCmd.Flags().StringP("forward-to", "f", "", "forward events to this localhost port number or url, e.g. 3000, https://example.com/hook")
+	listenCmd.Flags().Bool("skip-verify", false, "skip the verification of the SSL certificate of the forward-to url")
 }
