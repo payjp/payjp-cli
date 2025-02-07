@@ -50,7 +50,6 @@ func LoadFromFile(path string) (*Profiles, error) {
 			Name:              p["name"].(string),
 			TestModeSecretKey: p["test_mode_secret_key"].(string),
 			BaseURL:           p["base_url"].(string),
-			BaseApiURL:        p["base_api_url"].(string),
 			GrpcServerAddress: p["grpc_server_address"].(string),
 		}
 
