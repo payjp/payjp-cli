@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	pb "github.com/payjp/payjp-cli/gen/proto"
 	"github.com/payjp/payjp-cli/internal/listen"
@@ -19,8 +20,6 @@ var listenCmd = &cobra.Command{
 	Short: "Listen to events",
 	Long:  `Listen to events from the PAY.JP. You can specify the events you want to listen to using the --events flag. By default, it listens to all events.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("listen called")
-
 		profileName := cmd.Flag("profile").Value.String()
 		allProfiles := viper.Get("profiles").(*profiles.Profiles)
 		profile := allProfiles.LoadProfile(profileName)
@@ -30,22 +29,24 @@ var listenCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 
+		forwardTo := cmd.Flag("forward-to").Value.String()
 		skipVerify, err := cmd.Flags().GetBool("skip-verify")
 		if err != nil {
 			return err
 		}
 
-		eventForwarder, err := listen.NewEventForwarder(cmd.Flag("forward-to").Value.String(), skipVerify)
+		eventForwarder, err := listen.NewEventForwarder(forwardTo, skipVerify)
 		if err != nil {
 			return err
 		}
 		address := viper.GetString("GRPC_SERVER_ADDRESS")
 
-		err = listen.StartStream(ctx, address, &pb.ListenRequest{
+		listener := listen.NewListener(address)
+		err = listener.StartListen(ctx, &pb.ListenRequest{
 			ApiKey: profile.TestModeSecretKey,
 			Events: cmd.Flag("events").Value.String(),
-		}, func(res *pb.ListenResponse) error {
-			fmt.Printf("event received id: %s type: %s \n", res.PayjpEvent.Id, res.PayjpEvent.Type)
+		}, func(res *pb.PayjpEventResponse) error {
+			log.Printf("event received id: %s type: %s \n", res.PayjpEvent.Id, res.PayjpEvent.Type)
 
 			err := eventForwarder.ForwardEvent(res)
 			if err != nil {

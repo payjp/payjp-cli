@@ -29,7 +29,7 @@ func NewEventForwarder(forwardTo string, skipVerify bool) (*EventForwarder, erro
 	}, nil
 }
 
-func (f *EventForwarder) ForwardEvent(res *pb.ListenResponse) error {
+func (f *EventForwarder) ForwardEvent(res *pb.PayjpEventResponse) error {
 	if f.forwardURL == nil {
 		return nil
 	}
