@@ -6,8 +6,11 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"net/url"
+	"path"
 
 	pb "github.com/payjp/payjp-cli/gen/proto"
+	"github.com/payjp/payjp-cli/internal/ansi"
 	"github.com/payjp/payjp-cli/internal/listen"
 	"github.com/payjp/payjp-cli/internal/profiles"
 	"github.com/spf13/cobra"
@@ -46,9 +49,14 @@ var listenCmd = &cobra.Command{
 			ApiKey: profile.TestModeSecretKey,
 			Events: cmd.Flag("events").Value.String(),
 		}, func(res *pb.PayjpEventResponse) error {
-			log.Printf("event received id: %s type: %s \n", res.PayjpEvent.Id, res.PayjpEvent.Type)
+			eventURL, err := url.Parse(viper.GetString("BASE_URL"))
+			if err != nil {
+				return err
+			}
+			eventURL.Path = path.Join(eventURL.Path, "d", "events", res.PayjpEvent.Id)
+			log.Printf("--> %s [%s]\n", res.PayjpEvent.Type, ansi.Link(eventURL.String(), res.PayjpEvent.Id))
 
-			err := eventForwarder.ForwardEvent(res)
+			err = eventForwarder.ForwardEvent(res)
 			if err != nil {
 				return err
 			}
