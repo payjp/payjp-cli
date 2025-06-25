@@ -10,7 +10,9 @@ import (
 
 	pb "github.com/payjp/payjp-cli/gen/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 type Listener struct {
@@ -96,6 +98,11 @@ func (l *Listener) listen(ctx context.Context, request *pb.ListenRequest, onEven
 			log.Println("Connection timeout, Please try again later.")
 			return fmt.Errorf("timeout")
 		case err := <-errCh:
+			if stat, ok := status.FromError(err); ok {
+				if stat.Code() == codes.Unauthenticated {
+					return fmt.Errorf("authentication failed. Please login again and try your request.")
+				}
+			}
 			if errors.Is(err, io.EOF) {
 				log.Println("Server closed the stream")
 				l.connected = false
