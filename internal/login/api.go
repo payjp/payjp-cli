@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/payjp/payjp-cli/internal/payjp"
@@ -36,7 +37,14 @@ type AuthResult struct {
 
 // CallAuth calls the /payjpcli/auth endpoint to start the authentication process
 func CallAuth(ctx context.Context, client *payjp.Client) (*PayjpCliAuthResponse, error) {
-	res, err := client.PerformRequest(ctx, "POST", "/payjpcli/auth", url.Values{})
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown host"
+	}
+
+	res, err := client.PerformRequest(ctx, "POST", "/payjpcli/auth", url.Values{
+		"hostname": []string{hostname},
+	})
 	if err != nil {
 		return nil, err
 	}
