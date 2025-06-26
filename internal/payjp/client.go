@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	
+	"github.com/payjp/payjp-cli/internal/version"
 )
 
 // Client is the API client used to sent requests to Payjp's API.
@@ -61,7 +63,7 @@ func (c *Client) PerformRequest(ctx context.Context, method, path string, params
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("User-Agent", "payjp-cli")
-	req.Header.Set("X-Client-User-Agent", "TODO")
+	req.Header.Set("X-Client-User-Agent", version.GetUserAgent())
 
 	if c.apiKey != "" {
 		req.SetBasicAuth(c.apiKey, "")

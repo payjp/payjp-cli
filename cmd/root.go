@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/payjp/payjp-cli/internal/profiles"
+	"github.com/payjp/payjp-cli/internal/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -17,6 +18,7 @@ var rootCmd = &cobra.Command{
 	Use:          "payjp-cli",
 	Short:        "A CLI to help you integrate Pay.jp with your application",
 	Long:         "The official command-line tool to interact with Pay.jp.",
+	Version:      version.GetVersion(),
 	SilenceUsage: true,
 }
 
@@ -34,6 +36,8 @@ func init() {
 
 	rootCmd.PersistentFlags().String("profile-file-path", "", "file path (default is $HOME/.payjp-cli)")
 	rootCmd.PersistentFlags().StringP("profile", "p", "default", "profile name")
+
+	rootCmd.SetVersionTemplate(fmt.Sprintf("%s", version.GetFullVersion()))
 }
 
 // initConfig reads in config file and ENV variables if set.

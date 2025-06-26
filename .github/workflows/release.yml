@@ -38,10 +38,15 @@ jobs:
           GOARCH: ${{ matrix.arch }}
         run: |
           mkdir -p dist
+          VERSION=${GITHUB_REF#refs/tags/}
+          COMMIT=$(git rev-parse --short HEAD)
+          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          LDFLAGS="-X github.com/payjp/payjp-cli/internal/version.Version=$VERSION -X github.com/payjp/payjp-cli/internal/version.Commit=$COMMIT -X github.com/payjp/payjp-cli/internal/version.Date=$DATE"
+          
           if [ "${{ matrix.os }}" = "windows" ]; then
-            go build -o dist/payjp-cli-${{ matrix.os }}-${{ matrix.arch }}.exe .
+            go build -ldflags "$LDFLAGS" -o dist/payjp-cli-${{ matrix.os }}-${{ matrix.arch }}.exe .
           else
-            go build -o dist/payjp-cli-${{ matrix.os }}-${{ matrix.arch }} .
+            go build -ldflags "$LDFLAGS" -o dist/payjp-cli-${{ matrix.os }}-${{ matrix.arch }} .
           fi
 
       - name: Create archive
