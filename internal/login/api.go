@@ -21,7 +21,7 @@ type PayjpCliAuthResponse struct {
 
 type PayjpCliAuthPollingResponse struct {
 	Token              string `json:"token"`
-	PairingCode        string `json:"pariing_code"`
+	PairingCode        string `json:"pairing_code"`
 	Redeemed           bool   `json:"redeemed"`
 	AccountID          string `json:"account_id"`
 	AccountDisplayName string `json:"account_display_name"`
