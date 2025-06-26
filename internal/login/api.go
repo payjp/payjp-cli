@@ -56,7 +56,7 @@ func CallAuth(ctx context.Context, client *payjp.Client) (*PayjpCliAuthResponse,
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected http status code: %d %s", res.StatusCode, string(bodyBytes))
+		return nil, fmt.Errorf("unexpected http status code during authentication: %d", res.StatusCode)
 	}
 
 	var response *PayjpCliAuthResponse
@@ -93,7 +93,7 @@ func PollingAuthResult(ctx context.Context, client *payjp.Client, pollURL string
 
 		if res.StatusCode != http.StatusOK {
 			pollingCh <- &AuthResult{
-				Err: fmt.Errorf("unexpected http status code: %d %s", res.StatusCode, string(bodyBytes)),
+				Err: fmt.Errorf("unexpected http status code during polling: %d", res.StatusCode),
 			}
 			return
 		}
