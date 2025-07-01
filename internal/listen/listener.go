@@ -2,15 +2,18 @@ package listen
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"time"
 
 	pb "github.com/payjp/payjp-cli/gen/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 )
@@ -31,9 +34,14 @@ func NewListener(address string) *Listener {
 }
 
 func (l *Listener) StartListen(ctx context.Context, request *pb.ListenRequest, onEventHandler func(*pb.PayjpEventResponse) error) error {
+	cred := credentials.NewTLS(&tls.Config{})
+	if !strings.HasSuffix(l.address, ":443") {
+		cred = insecure.NewCredentials()
+	}
+
 	conn, err := grpc.NewClient(
 		l.address,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(cred),
 	)
 	if err != nil {
 		return err
