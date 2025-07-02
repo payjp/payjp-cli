@@ -44,18 +44,18 @@ jobs:
           LDFLAGS="-X github.com/payjp/payjp-cli/internal/version.Version=$VERSION -X github.com/payjp/payjp-cli/internal/version.Commit=$COMMIT -X github.com/payjp/payjp-cli/internal/version.Date=$DATE"
           
           if [ "${{ matrix.os }}" = "windows" ]; then
-            go build -ldflags "$LDFLAGS" -o dist/payjp-cli-${{ matrix.os }}-${{ matrix.arch }}.exe .
+            go build -ldflags "$LDFLAGS" -o dist/payjp-cli.exe .
           else
-            go build -ldflags "$LDFLAGS" -o dist/payjp-cli-${{ matrix.os }}-${{ matrix.arch }} .
+            go build -ldflags "$LDFLAGS" -o dist/payjp-cli .
           fi
 
       - name: Create archive
         run: |
           cd dist
           if [ "${{ matrix.os }}" = "windows" ]; then
-            zip payjp-cli-${{ matrix.os }}-${{ matrix.arch }}.zip payjp-cli-${{ matrix.os }}-${{ matrix.arch }}.exe
+            zip payjp-cli-${{ matrix.os }}-${{ matrix.arch }}.zip payjp-cli.exe
           else
-            tar -czf payjp-cli-${{ matrix.os }}-${{ matrix.arch }}.tar.gz payjp-cli-${{ matrix.os }}-${{ matrix.arch }}
+            tar -czf payjp-cli-${{ matrix.os }}-${{ matrix.arch }}.tar.gz payjp-cli
           fi
 
       - name: Upload artifact
