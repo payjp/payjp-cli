@@ -133,6 +133,8 @@ func (l *Listener) listen(ctx context.Context, request *pb.ListenRequest, onEven
 					log.Println("Connected. Start listening...")
 				case pb.SystemEventType_SYSTEM_EVENT_TYPE_RECONNECT_REQUESTED:
 					return ReconnectRequiredError
+				case pb.SystemEventType_SYSTEM_EVENT_TYPE_HEARTBEAT:
+					// Do nothing, just a heartbeat
 				}
 			}
 		}
