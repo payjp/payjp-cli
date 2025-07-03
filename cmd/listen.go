@@ -45,10 +45,15 @@ var listenCmd = &cobra.Command{
 		address := viper.GetString("GRPC_SERVER_ADDRESS")
 
 		listener := listen.NewListener(address)
-		err = listener.StartListen(ctx, &pb.ListenRequest{
-			ApiKey: profile.TestModeSecretKey,
-			Events: cmd.Flag("events").Value.String(),
-		}, func(res *pb.PayjpEventResponse) error {
+
+		initRequest := &pb.ListenRequest_InitRequest{
+			InitRequest: &pb.InitRequest{
+				ApiKey: profile.TestModeSecretKey,
+				Events: cmd.Flag("events").Value.String(),
+			},
+		}
+
+		err = listener.StartListen(ctx, &pb.ListenRequest{Request: initRequest}, func(res *pb.PayjpEventResponse) error {
 			eventURL, err := url.Parse(viper.GetString("BASE_URL"))
 			if err != nil {
 				return err
