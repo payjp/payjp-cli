@@ -107,6 +107,7 @@ type InitRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ApiKey        string                 `protobuf:"bytes,1,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
 	Events        string                 `protobuf:"bytes,2,opt,name=events,proto3" json:"events,omitempty"`
+	ClientVersion string                 `protobuf:"bytes,3,opt,name=client_version,json=clientVersion,proto3" json:"client_version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -151,6 +152,13 @@ func (x *InitRequest) GetApiKey() string {
 func (x *InitRequest) GetEvents() string {
 	if x != nil {
 		return x.Events
+	}
+	return ""
+}
+
+func (x *InitRequest) GetClientVersion() string {
+	if x != nil {
+		return x.ClientVersion
 	}
 	return ""
 }
@@ -393,10 +401,11 @@ const file_proto_listen_proto_rawDesc = "" +
 	"\rListenRequest\x124\n" +
 	"\finit_request\x18\x01 \x01(\v2\x0f.pb.InitRequestH\x00R\vinitRequest\x124\n" +
 	"\fpong_request\x18\x02 \x01(\v2\x0f.pb.PongRequestH\x00R\vpongRequestB\t\n" +
-	"\arequest\">\n" +
+	"\arequest\"e\n" +
 	"\vInitRequest\x12\x17\n" +
 	"\aapi_key\x18\x01 \x01(\tR\x06apiKey\x12\x16\n" +
-	"\x06events\x18\x02 \x01(\tR\x06events\"+\n" +
+	"\x06events\x18\x02 \x01(\tR\x06events\x12%\n" +
+	"\x0eclient_version\x18\x03 \x01(\tR\rclientVersion\"+\n" +
 	"\vPongRequest\x12\x1c\n" +
 	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\"\xb7\x01\n" +
 	"\x0eListenResponse\x12J\n" +
