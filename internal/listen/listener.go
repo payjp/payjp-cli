@@ -109,6 +109,8 @@ func (l *Listener) listen(ctx context.Context, request *pb.ListenRequest, onEven
 			if stat, ok := status.FromError(err); ok {
 				if stat.Code() == codes.Unauthenticated {
 					return fmt.Errorf("authentication failed. Please login again and try your request.")
+				} else if stat.Code() == codes.FailedPrecondition {
+					return fmt.Errorf("%s", stat.Message())
 				}
 			}
 			if errors.Is(err, io.EOF) {
