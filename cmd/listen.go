@@ -13,6 +13,7 @@ import (
 	"github.com/payjp/payjp-cli/internal/ansi"
 	"github.com/payjp/payjp-cli/internal/listen"
 	"github.com/payjp/payjp-cli/internal/profiles"
+	"github.com/payjp/payjp-cli/internal/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -48,8 +49,9 @@ var listenCmd = &cobra.Command{
 
 		initRequest := &pb.ListenRequest_InitRequest{
 			InitRequest: &pb.InitRequest{
-				ApiKey: profile.TestModeSecretKey,
-				Events: cmd.Flag("events").Value.String(),
+				ApiKey:        profile.TestModeSecretKey,
+				Events:        cmd.Flag("events").Value.String(),
+				ClientVersion: version.GetVersion(),
 			},
 		}
 
