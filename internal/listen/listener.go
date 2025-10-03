@@ -18,18 +18,22 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const MaxReconnectAttempts = 3
+
 type Listener struct {
-	address   string
-	client    pb.ListenClient
-	connected bool
+	address           string
+	client            pb.ListenClient
+	connected         bool
+	reconnectAttempts int
 }
 
 var ReconnectRequiredError = errors.New("reconnect required")
 
 func NewListener(address string) *Listener {
 	return &Listener{
-		address:   address,
-		connected: false,
+		address:           address,
+		connected:         false,
+		reconnectAttempts: 0,
 	}
 }
 
@@ -55,8 +59,13 @@ func (l *Listener) StartListen(ctx context.Context, request *pb.ListenRequest, o
 		err = l.listen(ctx, request, onEventHandler)
 		if err != nil {
 			if errors.Is(err, ReconnectRequiredError) {
-				log.Println("Reconnecting...")
-				continue
+				l.reconnectAttempts++
+				if l.reconnectAttempts <= MaxReconnectAttempts {
+					log.Printf("Reconnecting... (%d/%d)", l.reconnectAttempts, MaxReconnectAttempts)
+					continue
+				} else {
+					return fmt.Errorf("max reconnect attempts reached")
+				}
 			}
 
 			return err
@@ -103,19 +112,21 @@ func (l *Listener) listen(ctx context.Context, request *pb.ListenRequest, onEven
 			if l.connected {
 				continue
 			}
-			log.Println("Connection timeout, Please try again later.")
-			return fmt.Errorf("timeout")
+			log.Println("Connection timeout, retrying...")
+			return ReconnectRequiredError
 		case err := <-errCh:
+			l.connected = false
 			if stat, ok := status.FromError(err); ok {
 				if stat.Code() == codes.Unauthenticated {
 					return fmt.Errorf("authentication failed. Please login again and try your request.")
 				} else if stat.Code() == codes.FailedPrecondition {
 					return fmt.Errorf("%s", stat.Message())
+				} else if stat.Code() == codes.Internal || stat.Code() == codes.Unavailable {
+					return ReconnectRequiredError
 				}
 			}
 			if errors.Is(err, io.EOF) {
 				log.Println("Server closed the stream")
-				l.connected = false
 				return ReconnectRequiredError
 			}
 
@@ -132,6 +143,7 @@ func (l *Listener) listen(ctx context.Context, request *pb.ListenRequest, onEven
 				switch received.GetSystemEventResponse().Type {
 				case pb.SystemEventType_SYSTEM_EVENT_TYPE_OK:
 					l.connected = true
+					l.reconnectAttempts = 0
 					log.Println("Connected. Start listening...")
 				case pb.SystemEventType_SYSTEM_EVENT_TYPE_RECONNECT_REQUESTED:
 					return ReconnectRequiredError
