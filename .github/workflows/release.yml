@@ -95,3 +95,157 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+
+  update-homebrew:
+    name: Update Homebrew Formula
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Download release assets and compute SHA256
+        id: sha256
+        run: |
+          BASE_URL="https://github.com/payjp/payjp-cli/releases/download/${{ steps.version.outputs.tag }}"
+          curl -fsSL --retry 5 --retry-delay 10 "${BASE_URL}/payjp-cli-darwin-arm64.tar.gz" -o darwin-arm64.tar.gz
+          curl -fsSL --retry 5 --retry-delay 10 "${BASE_URL}/payjp-cli-linux-amd64.tar.gz" -o linux-amd64.tar.gz
+          curl -fsSL --retry 5 --retry-delay 10 "${BASE_URL}/payjp-cli-linux-arm64.tar.gz" -o linux-arm64.tar.gz
+
+          echo "darwin_arm64=$(sha256sum darwin-arm64.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "linux_amd64=$(sha256sum linux-amd64.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "linux_arm64=$(sha256sum linux-arm64.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.DISTRIBUTION_APP_ID }}
+          private-key: ${{ secrets.DISTRIBUTION_APP_PRIVATE_KEY }}
+          owner: payjp
+          repositories: homebrew-tap
+
+      - name: Checkout payjp-cli (for templates)
+        uses: actions/checkout@v4
+        with:
+          path: payjp-cli
+
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          repository: payjp/homebrew-tap
+          token: ${{ steps.app-token.outputs.token }}
+          path: homebrew-tap
+
+      - name: Update formula from template
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          SHA256_DARWIN_ARM64: ${{ steps.sha256.outputs.darwin_arm64 }}
+          SHA256_LINUX_AMD64: ${{ steps.sha256.outputs.linux_amd64 }}
+          SHA256_LINUX_ARM64: ${{ steps.sha256.outputs.linux_arm64 }}
+        run: |
+          sed \
+            -e "s/{{VERSION}}/$VERSION/g" \
+            -e "s/{{TAG}}/$TAG/g" \
+            -e "s/{{SHA256_DARWIN_ARM64}}/$SHA256_DARWIN_ARM64/g" \
+            -e "s/{{SHA256_LINUX_AMD64}}/$SHA256_LINUX_AMD64/g" \
+            -e "s/{{SHA256_LINUX_ARM64}}/$SHA256_LINUX_ARM64/g" \
+            payjp-cli/.github/distribution-templates/homebrew-manifest.template \
+            > homebrew-tap/Formula/payjp-cli.rb
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        working-directory: homebrew-tap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="update-payjp-cli-${VERSION}"
+          git checkout -b "$BRANCH"
+          git add Formula/payjp-cli.rb
+          git commit -m "Update payjp-cli to ${VERSION}"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "Update payjp-cli to ${VERSION}" \
+            --body "Automated update of payjp-cli formula to version ${VERSION}." \
+            --base main \
+            --head "$BRANCH"
+
+  update-scoop:
+    name: Update Scoop Manifest
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Download release asset and compute SHA256
+        id: sha256
+        run: |
+          BASE_URL="https://github.com/payjp/payjp-cli/releases/download/${{ steps.version.outputs.tag }}"
+          curl -fsSL --retry 5 --retry-delay 10 "${BASE_URL}/payjp-cli-windows-amd64.zip" -o windows-amd64.zip
+
+          echo "windows_amd64=$(sha256sum windows-amd64.zip | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.DISTRIBUTION_APP_ID }}
+          private-key: ${{ secrets.DISTRIBUTION_APP_PRIVATE_KEY }}
+          owner: payjp
+          repositories: scoop-bucket
+
+      - name: Checkout payjp-cli (for templates)
+        uses: actions/checkout@v4
+        with:
+          path: payjp-cli
+
+      - name: Checkout scoop-bucket
+        uses: actions/checkout@v4
+        with:
+          repository: payjp/scoop-bucket
+          token: ${{ steps.app-token.outputs.token }}
+          path: scoop-bucket
+
+      - name: Update manifest from template
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          SHA256_WINDOWS_AMD64: ${{ steps.sha256.outputs.windows_amd64 }}
+        run: |
+          sed \
+            -e "s/{{VERSION}}/$VERSION/g" \
+            -e "s/{{TAG}}/$TAG/g" \
+            -e "s/{{SHA256_WINDOWS_AMD64}}/$SHA256_WINDOWS_AMD64/g" \
+            payjp-cli/.github/distribution-templates/scoop-manifest.template \
+            > scoop-bucket/payjp-cli.json
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        working-directory: scoop-bucket
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="update-payjp-cli-${VERSION}"
+          git checkout -b "$BRANCH"
+          git add payjp-cli.json
+          git commit -m "Update payjp-cli to ${VERSION}"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "Update payjp-cli to ${VERSION}" \
+            --body "Automated update of payjp-cli manifest to version ${VERSION}." \
+            --base main \
+            --head "$BRANCH"
