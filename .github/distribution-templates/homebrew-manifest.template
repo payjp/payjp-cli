@@ -1,0 +1,32 @@
+class PayjpCli < Formula
+  desc "PAY.JP CLI tool"
+  homepage "https://github.com/payjp/payjp-cli"
+  license "MIT"
+  version "{{VERSION}}"
+
+  on_macos do
+    on_arm do
+      url "https://github.com/payjp/payjp-cli/releases/download/{{TAG}}/payjp-cli-darwin-arm64.tar.gz"
+      sha256 "{{SHA256_DARWIN_ARM64}}"
+    end
+  end
+
+  on_linux do
+    on_intel do
+      url "https://github.com/payjp/payjp-cli/releases/download/{{TAG}}/payjp-cli-linux-amd64.tar.gz"
+      sha256 "{{SHA256_LINUX_AMD64}}"
+    end
+    on_arm do
+      url "https://github.com/payjp/payjp-cli/releases/download/{{TAG}}/payjp-cli-linux-arm64.tar.gz"
+      sha256 "{{SHA256_LINUX_ARM64}}"
+    end
+  end
+
+  def install
+    bin.install "payjp-cli"
+  end
+
+  test do
+    system bin/"payjp-cli", "--version"
+  end
+end
