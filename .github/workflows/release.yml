@@ -25,7 +25,7 @@ jobs:
             arch: amd64
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -86,7 +86,7 @@ jobs:
           sha256sum *.tar.gz *.zip > checksums.txt
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/*.tar.gz
@@ -122,7 +122,7 @@ jobs:
 
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.DISTRIBUTION_APP_ID }}
           private-key: ${{ secrets.DISTRIBUTION_APP_PRIVATE_KEY }}
@@ -130,12 +130,12 @@ jobs:
           repositories: homebrew-tap
 
       - name: Checkout payjp-cli (for templates)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: payjp-cli
 
       - name: Checkout homebrew-tap
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: payjp/homebrew-tap
           token: ${{ steps.app-token.outputs.token }}
@@ -199,7 +199,7 @@ jobs:
 
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.DISTRIBUTION_APP_ID }}
           private-key: ${{ secrets.DISTRIBUTION_APP_PRIVATE_KEY }}
@@ -207,12 +207,12 @@ jobs:
           repositories: scoop-bucket
 
       - name: Checkout payjp-cli (for templates)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: payjp-cli
 
       - name: Checkout scoop-bucket
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: payjp/scoop-bucket
           token: ${{ steps.app-token.outputs.token }}
